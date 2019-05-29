@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace AspNetCoreUseSwagger
 {
@@ -32,6 +31,11 @@ namespace AspNetCoreUseSwagger
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info { Title = "My API", Version = "v1" });
+
+                c.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
+                c.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "Domain.xml"), true);
+
+                c.OperationFilter<AddAuthTokenHeaderParameter>();
             });
         }
 
@@ -56,8 +60,34 @@ namespace AspNetCoreUseSwagger
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
             });
 
-            app.UseHttpsRedirection();
             app.UseMvc();
+        }
+    }
+
+
+    public class AddAuthTokenHeaderParameter : IOperationFilter
+    {
+        public void Apply(Operation operation, OperationFilterContext context)
+        {
+            if (operation.Parameters == null)
+            {
+                operation.Parameters = new List<IParameter>();
+            }
+
+            context.ApiDescription.TryGetMethodInfo(out MethodInfo methodInfo);
+            var allowAnonymousAttribute = methodInfo.GetCustomAttribute<AllowAnonymousAttribute>(false);
+            if (allowAnonymousAttribute == null)
+            {
+                operation.Parameters.Add(new NonBodyParameter()
+                {
+                    Name = "Authorization",
+                    In = "header",
+                    Type = "string",
+                    Description = "Authorization认证信息",
+                    Default = "Bearer ",
+                    Required = true
+                });
+            }
         }
     }
 }

@@ -1,16 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Domain;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace AspNetCoreUseSwagger.Controllers
 {
+    /// <summary>
+    /// Values控制器
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ValuesController : ControllerBase
     {
-        // GET api/values
+        /// <summary>
+        /// GET api/values方法
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
@@ -43,9 +47,5 @@ namespace AspNetCoreUseSwagger.Controllers
         }
     }
 
-    public class Person
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-    }
+    
 }
