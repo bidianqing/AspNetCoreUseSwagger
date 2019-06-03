@@ -9,4 +9,8 @@
     <DocumentationFile>obj\Debug\netstandard2.0\Domain.xml</DocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>obj\Release\netstandard2.0\Domain.xml</DocumentationFile>
+  </PropertyGroup>
+
 </Project>
