@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -32,10 +33,10 @@ namespace AspNetCoreUseSwagger
             {
                 c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info { Title = "My API", Version = "v1" });
 
-                c.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
-                c.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "Domain.xml"), true);
+                c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
+                c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Domain.xml"), true);
 
-                c.OperationFilter<AddAuthTokenHeaderParameter>();
+                c.OperationFilter<AddAuthTokenOperationFilter>();
             });
         }
 
@@ -65,7 +66,7 @@ namespace AspNetCoreUseSwagger
     }
 
 
-    public class AddAuthTokenHeaderParameter : IOperationFilter
+    public class AddAuthTokenOperationFilter : IOperationFilter
     {
         public void Apply(Operation operation, OperationFilterContext context)
         {
