@@ -5,14 +5,14 @@ using System.Collections.Generic;
 namespace AspNetCoreUseSwagger.Controllers
 {
     /// <summary>
-    /// Values控制器
+    /// Values控制器 123
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ValuesController : ControllerBase
     {
         /// <summary>
-        /// GET api/values方法
+        /// GET api/values方法  123
         /// </summary>
         /// <returns></returns>
         [HttpGet]

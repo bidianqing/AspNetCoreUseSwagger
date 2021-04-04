@@ -33,12 +33,10 @@ namespace AspNetCoreUseSwagger
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
-                //c.EnableAnnotations();
-
                 c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
                 c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Domain.xml"), true);
 
-                //c.OperationFilter<AddAuthTokenOperationFilter>();
+                c.OperationFilter<AddAuthTokenOperationFilter>();
             });
         }
 
