@@ -1,15 +1,25 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace AspNetCoreUseSwagger
 {
@@ -25,7 +35,28 @@ namespace AspNetCoreUseSwagger
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers(options =>
+            {
+                var policy = new AuthorizationPolicyBuilder()
+                                 .RequireAuthenticatedUser()
+                                 .Build();
+                options.Filters.Add(new AuthorizeFilter(policy));
+            }).ConfigureApiBehaviorOptions(options =>
+            {
+                options.InvalidModelStateResponseFactory = actionContext =>
+                {
+                    string errorMessage = actionContext.ModelState.Values.First(u => u.Errors.Count > 0).Errors.First().ErrorMessage;
+
+                    actionContext.HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+
+                    return new JsonResult(new
+                    {
+                        success = false,
+                        data = new { },
+                        message = errorMessage
+                    });
+                };
+            });
 
             // Register the Swagger generator, defining one or more Swagger documents
             // https://docs.microsoft.com/zh-cn/aspnet/core/tutorials/getting-started-with-swashbuckle
@@ -36,7 +67,32 @@ namespace AspNetCoreUseSwagger
                 c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
                 c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Domain.xml"), true);
 
-                c.OperationFilter<AddAuthTokenOperationFilter>();
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = HeaderNames.Authorization,
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    Description = "在下框中输入Bearer 你的jwt token",
+                });
+
+                c.OperationFilter<BearerAuthOperationsFilter>();
+            });
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateActor = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = Configuration["Issuer"],
+                    ValidAudience = Configuration["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["SigningKey"])),
+                    ClockSkew = TimeSpan.Zero,
+                    ValidateLifetime = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                };
             });
         }
 
@@ -59,6 +115,9 @@ namespace AspNetCoreUseSwagger
 
             app.UseRouting();
 
+            app.UseAuthentication();
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
@@ -67,28 +126,32 @@ namespace AspNetCoreUseSwagger
     }
 
 
-    public class AddAuthTokenOperationFilter : IOperationFilter
+    public class BearerAuthOperationsFilter : IOperationFilter
     {
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            if (operation.Parameters == null)
-            {
-                operation.Parameters = new List<OpenApiParameter>();
-            }
+            var noAuthRequired = context.ApiDescription.CustomAttributes().Any(attr => attr.GetType() == typeof(AllowAnonymousAttribute));
 
-            context.ApiDescription.TryGetMethodInfo(out MethodInfo methodInfo);
-            var allowAnonymousAttribute = methodInfo.GetCustomAttribute<AllowAnonymousAttribute>(false);
+            if (noAuthRequired) return;
 
-            if (allowAnonymousAttribute == null)
+            operation.Security = new List<OpenApiSecurityRequirement>
             {
-                operation.Parameters.Add(new OpenApiParameter()
+                new OpenApiSecurityRequirement
                 {
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Description = "Authorization认证信息",
-                    Required = true
-                });
-            }
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new List<string>()
+                    }
+                }
+            };
         }
     }
+
 }
