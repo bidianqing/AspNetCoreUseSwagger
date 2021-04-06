@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
@@ -17,20 +16,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AspNetCoreUseSwagger
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             Configuration = configuration;
+            WebHostEnvironment = webHostEnvironment;
         }
 
         public IConfiguration Configuration { get; }
+
+        public IWebHostEnvironment WebHostEnvironment { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -58,26 +58,30 @@ namespace AspNetCoreUseSwagger
                 };
             });
 
-            // Register the Swagger generator, defining one or more Swagger documents
-            // https://docs.microsoft.com/zh-cn/aspnet/core/tutorials/getting-started-with-swashbuckle
-            services.AddSwaggerGen(c =>
+            if (WebHostEnvironment.IsDevelopment())
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
-
-                c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
-                c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Domain.xml"), true);
-
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                // Register the Swagger generator, defining one or more Swagger documents
+                // https://docs.microsoft.com/zh-cn/aspnet/core/tutorials/getting-started-with-swashbuckle
+                services.AddSwaggerGen(c =>
                 {
-                    Name = HeaderNames.Authorization,
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer",
-                    Description = "在下框中输入Bearer 你的jwt token",
-                });
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
-                c.OperationFilter<BearerAuthOperationsFilter>();
-            });
+                    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
+                    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Domain.xml"), true);
+
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Name = HeaderNames.Authorization,
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "Bearer",
+                        Description = "在下框中输入Bearer 你的jwt token",
+                    });
+
+                    c.OperationFilter<BearerAuthOperationsFilter>();
+                });
+            }
+            
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
@@ -104,14 +108,18 @@ namespace AspNetCoreUseSwagger
                 app.UseDeveloperExceptionPage();
             }
 
-            // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
-
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(c =>
+            if (env.IsDevelopment())
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-            });
+                // Enable middleware to serve generated Swagger as a JSON endpoint.
+                app.UseSwagger();
+
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                });
+            }
+
 
             app.UseRouting();
 
