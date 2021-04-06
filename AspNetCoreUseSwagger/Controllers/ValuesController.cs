@@ -43,6 +43,7 @@ namespace AspNetCoreUseSwagger.Controllers
         }
 
         // DELETE api/values/5
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{id}")]
         public void Delete(int id)
         {
