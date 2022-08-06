@@ -41,7 +41,8 @@ namespace AspNetCoreUseSwagger
                                  .RequireAuthenticatedUser()
                                  .Build();
                 options.Filters.Add(new AuthorizeFilter(policy));
-            }).ConfigureApiBehaviorOptions(options =>
+            })
+            .ConfigureApiBehaviorOptions(options =>
             {
                 options.InvalidModelStateResponseFactory = actionContext =>
                 {
@@ -56,6 +57,10 @@ namespace AspNetCoreUseSwagger
                         message = errorMessage
                     });
                 };
+            })
+            .AddNewtonsoftJson(options =>
+            {
+
             });
 
             if (WebHostEnvironment.IsDevelopment())
@@ -64,7 +69,7 @@ namespace AspNetCoreUseSwagger
                 // https://docs.microsoft.com/zh-cn/aspnet/core/tutorials/getting-started-with-swashbuckle
                 services.AddSwaggerGen(c =>
                 {
-                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API - V1", Version = "v1" });
 
                     c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "AspNetCoreUseSwagger.xml"), true);
                     c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Domain.xml"), true);
@@ -80,6 +85,7 @@ namespace AspNetCoreUseSwagger
 
                     c.OperationFilter<BearerAuthOperationsFilter>();
                 });
+                services.AddSwaggerGenNewtonsoftSupport();
             }
             
 
