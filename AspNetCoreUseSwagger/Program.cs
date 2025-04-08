@@ -66,6 +66,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     c.OperationFilter<BearerAuthOperationsFilter>();
+
+    c.CustomSchemaIds(type => type.FullName);
 });
 builder.Services.AddSwaggerGenNewtonsoftSupport();
 
